@@ -1,0 +1,49 @@
+version: '3.8'
+
+volumes:
+  postgres_data_dev: {}
+  postgres_backup_dev: {}
+  redis_data_dev: {}
+
+services:
+  postgres:
+    image: postgres:10.4-alpine
+    env_file: ./.docker-env
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - postgres_backup_dev:/backups
+
+  redis:
+    restart: always
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+
+  django:
+    init: true
+    build:
+      context: .
+      dockerfile: ./docker/django/Dockerfile
+    depends_on:
+      - postgres
+      - redis
+    env_file: ./.docker-env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app
+
+  jupyter:
+    init: true
+    build:
+      context: .
+      dockerfile: ./docker/jupyter/Dockerfile
+    depends_on:
+      - postgres
+    env_file: ./.docker-env
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./src:/app
